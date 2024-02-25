@@ -181,7 +181,11 @@ configs:
             alpha: 0.25
 
     extra_feat: 
-        enable: 'joints_3D,apperance'
+        enable: 'joints_2D,joints_3D,apperance'
+        joints_2D:
+            dim: 28 # 30 if using an additional ground-point
+            mid_dim: 256
+            en_dim: 128
         pose_shape:
             dim: 229
             mid_dim: 229

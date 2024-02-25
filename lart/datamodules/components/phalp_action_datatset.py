@@ -201,6 +201,9 @@ class PHALP_action_dataset(Dataset):
         if("joints_3D" in self.opt.extra_feat.enable):
             input_data['joints_3D'] = np.zeros((frame_length, self.max_tokens, 135))*0.0
         
+        if("joints_2D" in self.opt.extra_feat.enable):
+            input_data['joints_2D'] = np.zeros((frame_length, self.max_tokens, 28))*0.0
+        
         return input_data, output_data, meta_data
     
     def __getitem__(self, idx):
