@@ -92,3 +92,59 @@ def compute_loss(opt, output, smpl_output, output_data, input_data, train=True):
         loss_dict["action"]  += loss_action/opt.num_smpl_heads
     
     return loss_dict
+
+
+def compute_lite_loss(opt, output, smpl_output, output_data, input_data, train=True):
+    loss_dict      = {
+        "action" : 0, 
+    }
+    
+    for fi in range(opt.num_smpl_heads):
+        gt_has_detection     = output_data['has_detection'][:, :, :, fi, :]
+        masked_detection     = input_data['mask_detection']
+        gt_action_kinetics   = output_data['action_label_kinetics'][:, :, :, fi, :].float()
+        
+        if(opt.ava.predict_valid):
+                gt_action_ava    = output_data['action_label_ava'][:, :, :, fi, :opt.ava.num_valid_action_classes].float()
+        else:
+                gt_action_ava    = output_data['action_label_ava'][:, :, :, fi, :].float()
+        if(train): 
+            if(opt.masked):
+                loca_loss = torch.logical_and(gt_has_detection==1, masked_detection==1)
+            else:
+                loca_loss = gt_has_detection==1
+        else:      
+            loca_loss = gt_has_detection==1
+
+        loca_loss = loca_loss[:, :, :, 0]
+        BS, T, P, *_          = gt_has_detection.shape
+        pred_action_ava      = smpl_output['pred_actions_ava'][:, fi, :].view(BS, T, P, -1)
+        pred_action_kinetics = smpl_output['pred_actions_kinetics']
+        
+        loss_action = torch.tensor(0.0).cuda()
+
+        if("action" in opt.loss_type):
+            if("ava" in opt.action_space):
+                gt_has_annotation  = output_data['has_gt'][:, :, :, fi, :]
+                
+                if(opt.ava.gt_type=="gt"):
+                    loca_loss_annot = torch.logical_and(loca_loss==1, gt_has_annotation[:, :, :, 0]==2)
+                elif(opt.ava.gt_type=="pseduo_gt"):
+                    loca_loss_annot = torch.logical_and(loca_loss==1, gt_has_annotation[:, :, :, 0]==1)
+                elif(opt.ava.gt_type=="all"):
+                    loca_loss_annot = torch.logical_and(loca_loss==1, gt_has_annotation[:, :, :, 0]>=1)
+                else:
+                    raise ValueError("Unknown ava gt type")
+
+                if("BCE" in opt.loss_type.split("action")[1]):
+                    loss_action = 10 * F.binary_cross_entropy_with_logits(pred_action_ava[loca_loss_annot], gt_action_ava[loca_loss_annot])
+                    
+            if("kinetics" in opt.action_space):
+                
+                gt_has_annotation_k = output_data['has_gt_kinetics'][:, 0, :, 0, 0]==1
+                # cross entropy loss with one-hot encoding
+                loss_action_k = F.cross_entropy(pred_action_kinetics[gt_has_annotation_k], gt_action_kinetics[:, 0][gt_has_annotation_k][:, 0].long()) # for 0th person
+                loss_action += torch.nan_to_num(loss_action_k)
+
+            loss_dict["action"]  += loss_action/opt.num_smpl_heads
+    return loss_dict

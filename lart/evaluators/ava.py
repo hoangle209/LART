@@ -6,17 +6,17 @@ import numpy as np
 import torch
 from lightning.pytorch.utilities import rank_zero_only
 from pytorchvideo.data.ava import AvaLabeledVideoFramePaths
-from phalp.configs.base import CACHE_DIR
+# from phalp.configs.base import CACHE_DIR
 from lart.ActivityNet.Evaluation.get_ava_performance import run_evaluation
 from lart.utils import get_pylogger
 
 log = get_pylogger(__name__)
 
-
+CACHE_DIR = "/home/hoang/Documents/LART/stuffs"
 class AVA_evaluator():
     def __init__(self, cfg):
         self.cfg = cfg
-        self.ava_valid_classes = joblib.load(f"{CACHE_DIR}/phalp/ava/ava_class_mapping.pkl")
+        self.ava_valid_classes = joblib.load(f"{CACHE_DIR}/ava_class_mapping.pkl")
         self.ava_valid_classes_inv = {v: k for k, v in self.ava_valid_classes.items()}  
     
     def compute_map(self, epoch):

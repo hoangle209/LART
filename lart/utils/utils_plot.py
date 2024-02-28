@@ -7,7 +7,7 @@ import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-from phalp.configs.base import CACHE_DIR
+# from phalp.configs.base import CACHE_DIR
 
 def read_labelmap(labelmap_file):
   """Reads a labelmap without the dependency on protocol buffers.
