@@ -68,8 +68,6 @@ hydra:
 hydra_logging: colorlog
 job_logging: colorlog
 
-
-
 # task name, determines output directory path
 task_name: "1000"
 tags: ["dev"]
@@ -99,6 +97,7 @@ model:
     cfg: ${configs}
 
 configs:
+    cache_dir: "${paths.root_dir}/stuffs" # storing stuffs, using to load ava things
     data_dir: ${paths.data_dir}
     storage_folder: "${paths.log_dir}/${task_name}/${hydra:sweep.subdir}"
     train_dataset: ava_train,kinetics_train
@@ -144,7 +143,6 @@ configs:
     compute_map: True
     compute_acc: True
     log_frequency: 100
-    hmr_model: "hmr2018"
     loca_l1_weight: 1
 
     action_space: "ava"
@@ -164,8 +162,8 @@ configs:
     
     ava:
         sampling_factor: 1
-        num_action_classes: 80
-        num_valid_action_classes: 60
+        num_action_classes: 14
+        num_valid_action_classes: 14
         gt_type: "all"
         head_dropout: 0.0
         predict_valid: True

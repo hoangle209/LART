@@ -184,7 +184,7 @@ class Transformer(nn.Module):
             
         return x
 
-class lart_transformer(nn.Module):
+class lart_transformer_lite(nn.Module):
     def __init__(self, opt, dim, depth, heads, mlp_dim, dim_head = 64, dropout = 0., emb_dropout = 0., droppath = 0., device=None):
         super().__init__()
         self.cfg  = opt

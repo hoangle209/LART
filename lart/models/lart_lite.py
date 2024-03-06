@@ -16,11 +16,10 @@ from omegaconf import DictConfig
 # from phalp.utils.utils_download import cache_url
 from torchmetrics import MeanMetric
 
-# from lart.evaluators.ava import AVA_evaluator
-from lart.models.components.lart_transformer.transformer_lite import \
-    lart_transformer
+from lart.evaluators.ava import AVA_evaluator
+from lart.models.components.lart_transformer import lart_transformer_lite
 from lart.utils import get_pylogger
-from lart.utils.losses import compute_loss
+from lart.utils.losses import compute_lite_loss
 from lart.utils.utils_plot import read_ava_pkl
 
 log = get_pylogger(__name__)
@@ -62,7 +61,7 @@ class LART_LitModule(LightningModule):
 
         # create the model
         self.cfg.in_feat = self.cfg.extra_feat.joints_2D.en_dim + self.cfg.extra_feat.apperance.en_dim
-        self.encoder      = lart_transformer(   
+        self.encoder      = lart_transformer_lite(   
                                 opt         = self.cfg, 
                                 dim         = self.cfg.in_feat,
                                 depth       = self.cfg.transformer.depth,
@@ -77,21 +76,17 @@ class LART_LitModule(LightningModule):
         
 
         # CREATE VARIOUS EVALUATORS
-        # self.evaluator_ava = AVA_evaluator(self.cfg)
+        self.evaluator_ava = AVA_evaluator(self.cfg)
 
-        ############ SMPL stuff ##############
-        # self.phalp_cfg = FullConfig()
-        # smpl_params  = {k.lower(): v for k,v in asdict(self.phalp_cfg.SMPL).items()}
-        # self.smpl     = SMPL(**smpl_params)
-
-        self.best_val_acc = 0
+        self.best_val_acc = 0                                         
         try:
-            results_map = read_ava_pkl(self.cfg.storage_folder + "/results/", best=True)
+            CACHE_DIR = self.cfg.cache_dir
+            results_map = read_ava_pkl(self.cfg.storage_folder + "/results/", best=True, cache_dir=CACHE_DIR)
             self.best_val_acc = np.mean(results_map["all"][1])
         except Exception as e:
             log.warning(e)
             
-        # os.makedirs(self.cfg.storage_folder + "/slowfast/", exist_ok=True)
+        # os.makedirs(self.cfg.storage_folder + "/slowfast/", exist_ok=True) 
         # os.makedirs(self.cfg.storage_folder + "/results/", exist_ok=True)
         # os.makedirs(self.cfg.storage_folder + "/videos/", exist_ok=True)
         # log.info("Storage folder : " + self.cfg.storage_folder)
@@ -135,7 +130,7 @@ class LART_LitModule(LightningModule):
     def step(self, batch: Any):
         input_data, output_data, _, _ = batch
         output, smpl_output, vq_loss  = self.forward(input_data, mask_type=self.cfg.mask_type)
-        loss_dict                     = compute_loss(self.cfg, output, smpl_output, output_data, input_data, train=True)
+        loss_dict                     = compute_lite_loss(self.cfg, output, smpl_output, output_data, input_data, train=True)
         loss_dict['vq_loss']          = vq_loss
         
         return loss_dict, output, smpl_output
@@ -171,7 +166,7 @@ class LART_LitModule(LightningModule):
 
         output, smpl_output, _ = self.forward(input_data, self.cfg.mask_type_test)
         
-        loss_dict = compute_loss(self.cfg, output, smpl_output, output_data, input_data, train=False)
+        loss_dict = compute_lite_loss(self.cfg, output, smpl_output, output_data, input_data, train=False)
         loss = sum([v for k,v in loss_dict.items()])
         
         if(self.cfg.compute_map and "ava" in self.cfg.action_space): 

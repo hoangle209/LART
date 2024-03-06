@@ -26,19 +26,19 @@ def load_model(cfg):
     return model, None
 
 @hydra.main(version_base="1.2", config_path="../configs", config_name="lart_lite.yaml")
-def load_(cfg: DictConfig):
-    model, _ = load_model(cfg)
-    return model
-
-if __name__ == "__main__":
+def run_(cfg: DictConfig):
     input = {
-        "2D_joints": torch.rand(1, 125, 5, 28),
-        "apperance": torch.rand(1, 125, 5, 2048),
+        "joints_2D": torch.rand(1, 125, 5, 28),
+        "apperance_emb": torch.rand(1, 125, 5, 2048),
         "has_detection": torch.ones(1, 125, 5, 1),
         "mask_detection": torch.zeros(1, 125, 5, 1)
     }
+    model, _ = load_model(cfg)
+    a = model(input, "zero")
+    print(a[1]["pred_actions_ava"].size())
 
+if __name__ == "__main__":
     # cfg = OmegaConf.load("configs/lart_lite_wo_hydra.yaml")
-    model = load_()
+    run_()
 
 

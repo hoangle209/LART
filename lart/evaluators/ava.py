@@ -12,17 +12,17 @@ from lart.utils import get_pylogger
 
 log = get_pylogger(__name__)
 
-CACHE_DIR = "/home/hoang/Documents/LART/stuffs"
 class AVA_evaluator():
     def __init__(self, cfg):
         self.cfg = cfg
-        self.ava_valid_classes = joblib.load(f"{CACHE_DIR}/ava_class_mapping.pkl")
+        self.CACHE_DIR = cfg.cache_dir
+        self.ava_valid_classes = joblib.load(f"{self.CACHE_DIR}/ava_class_mapping.pkl")
         self.ava_valid_classes_inv = {v: k for k, v in self.ava_valid_classes.items()}  
     
     def compute_map(self, epoch):
-        pbtext = open(f"{CACHE_DIR}/lart/ava_action_list_v2.2_for_activitynet_2019.pbtxt", "r")
+        pbtext = open(f"{self.CACHE_DIR}/lart/ava_action_list_v2.2_for_activitynet_2019.pbtxt", "r")
         if(self.cfg.ava.map_on == "AVA"):
-            gt_annotations = open(f"{CACHE_DIR}/lart/ava_val_v2.2.csv", "r")
+            gt_annotations = open(f"{self.CACHE_DIR}/lart/ava_val_v2.2.csv", "r")
         # elif(self.cfg.ava.map_on == "AVA-AK"):
         #     gt_annotations = open("data/kinetics/AVA-AK_val.csv", "r")
         # elif(self.cfg.ava.map_on == "AVA-AK2"):
@@ -45,7 +45,7 @@ class AVA_evaluator():
         slowfast_files = [i for i in os.listdir(ava_results_path) if (i.endswith(".pkl") and not(i.startswith("eval_pkl_dict_")))]    
         slowfast_pkl_files = joblib.Parallel(n_jobs=8, timeout=9999)(joblib.delayed(joblib.load)(ava_results_path + path) for path in slowfast_files)
                 
-        label_map, allowed_class_ids = AvaLabeledVideoFramePaths.read_label_map(f'{CACHE_DIR}/lart/ava_action_list.pbtxt')
+        label_map, allowed_class_ids = AvaLabeledVideoFramePaths.read_label_map(f'{self.CACHE_DIR}/lart/ava_action_list.pbtxt')
         f = open(csv_path, 'w')
         writer = csv.writer(f)
         counter = 0

@@ -108,6 +108,7 @@ def compute_lite_loss(opt, output, smpl_output, output_data, input_data, train=T
                 gt_action_ava    = output_data['action_label_ava'][:, :, :, fi, :opt.ava.num_valid_action_classes].float()
         else:
                 gt_action_ava    = output_data['action_label_ava'][:, :, :, fi, :].float()
+                
         if(train): 
             if(opt.masked):
                 loca_loss = torch.logical_and(gt_has_detection==1, masked_detection==1)

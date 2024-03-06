@@ -34,7 +34,8 @@ def read_labelmap(labelmap_file):
     labelmap[name] = {"id": class_id, "name": name, "type": class_type}
   return labelmap
 
-def read_ava_pkl(pkl_file, refence_file=None, best=False, verbose=True, subtask="all"):
+def read_ava_pkl(pkl_file, refence_file=None, best=False, verbose=True, subtask="all", cache_dir=None):
+    CACHE_DIR = cache_dir
     labelmap = read_labelmap(open(os.path.join(CACHE_DIR, 'lart/ava_action_list_v2.2.pbtxt'), 'r'))
     class_sum = joblib.load(os.path.join(CACHE_DIR, 'lart/class_sum.pkl'))
     def get_actions(pkl_file):
