@@ -88,9 +88,9 @@ class PerImageEvaluation(object):
           object instances detected with class label c
     """
     # fixing
-    # detected_boxes, detected_scores, detected_class_labels, detected_masks = (
-    #     self._remove_invalid_boxes(detected_boxes, detected_scores,
-    #                                detected_class_labels, detected_masks))
+    detected_boxes, detected_scores, detected_class_labels, detected_masks = (
+        self._remove_invalid_boxes(detected_boxes, detected_scores,
+                                   detected_class_labels, detected_masks))
     scores, tp_fp_labels = self._compute_tp_fp(
         detected_boxes=detected_boxes,
         detected_scores=detected_scores,

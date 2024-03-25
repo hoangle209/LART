@@ -100,18 +100,19 @@ class AVA_evaluator():
         frame_size_array = []
         frame_conf_array = []
         frame_bbox_array = []
-        for i in range(len(meta_data['frame_size'])):
-            frame_size_array.append(meta_data['frame_size'][i])
-            frame_conf_array.append(meta_data['frame_conf'][i])
+        # print(len(meta_data['frame_name']))
+        for i in range(len(meta_data['frame_name'])):
+            frame_size_array.append(meta_data['frame_size'][0][i])
+            frame_conf_array.append(meta_data['frame_conf'][i][0])
             frame_bbox_array.append(meta_data['frame_bbox'][i])
             # fixing while not done in pkl0 ava
             # temp_bbox = torch.zeros((165, 4))
             # temp_conf = torch.zeros((165))
             # frame_conf_array.append(temp_conf)
             # frame_bbox_array.append(temp_bbox)
-        frame_size_array  = torch.stack(frame_size_array).permute(1, 0, 2)
-        frame_conf_array  = torch.stack(frame_conf_array).permute(1, 0)
-        frame_bbox_array  = torch.stack(frame_bbox_array).permute(1, 0, 2)
+        frame_size_array  = torch.stack(frame_size_array)[None, ...].permute(1, 0, 2)
+        frame_conf_array  = torch.stack(frame_conf_array)
+        frame_bbox_array  = torch.stack(frame_bbox_array)
         print(frame_size_array.shape)
         return frame_name_array, frame_size_array, frame_conf_array, frame_bbox_array
 
