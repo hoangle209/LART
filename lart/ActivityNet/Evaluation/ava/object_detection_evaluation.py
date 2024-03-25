@@ -288,7 +288,6 @@ class ObjectDetectionEvaluator(DetectionEvaluator):
               .format(self._matching_iou_threshold,
                       category_index[idx + self._label_id_offset]['name']))
           pascal_metrics[display_name] = per_class_corloc[idx]
-
     return pascal_metrics
 
   def clear(self):
@@ -588,7 +587,6 @@ class ObjectDetectionEvaluation(object):
           'image %s has already been added to the detection result database',
           image_key)
       return
-
     self.detection_keys.add(image_key)
     if image_key in self.groundtruth_boxes:
       groundtruth_boxes = self.groundtruth_boxes[image_key]
@@ -620,7 +618,6 @@ class ObjectDetectionEvaluation(object):
             groundtruth_is_group_of_list=groundtruth_is_group_of_list,
             detected_masks=detected_masks,
             groundtruth_masks=groundtruth_masks))
-
     for i in range(self.num_class):
       if scores[i].shape[0] > 0:
         self.scores_per_class[i].append(scores[i])
@@ -671,17 +668,15 @@ class ObjectDetectionEvaluation(object):
           'The following classes have no ground truth examples: %s',
           np.squeeze(np.argwhere(self.num_gt_instances_per_class == 0)) +
           self.label_id_offset)
-
     if self.use_weighted_mean_ap:
-      all_scores = np.array([], dtype=float)
-      all_tp_fp_labels = np.array([], dtype=bool)
-
+      all_scores = np.array([], dtype=np.float32)
+      all_tp_fp_labels = np.array([], dtype=np.bool_)
     for class_index in range(self.num_class):
       if self.num_gt_instances_per_class[class_index] == 0:
         continue
       if not self.scores_per_class[class_index]:
-        scores = np.array([], dtype=float)
-        tp_fp_labels = np.array([], dtype=bool)
+        scores = np.array([], dtype=np.float32)
+        tp_fp_labels = np.array([], dtype=np.bool_)
       else:
         scores = np.concatenate(self.scores_per_class[class_index])
         tp_fp_labels = np.concatenate(self.tp_fp_labels_per_class[class_index])
@@ -694,7 +689,6 @@ class ObjectDetectionEvaluation(object):
       self.recalls_per_class.append(recall)
       average_precision = metrics.compute_average_precision(precision, recall)
       self.average_precision_per_class[class_index] = average_precision
-
     self.corloc_per_class = metrics.compute_cor_loc(
         self.num_gt_imgs_per_class,
         self.num_images_correctly_detected_per_class)

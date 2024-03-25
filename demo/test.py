@@ -34,6 +34,7 @@ def run_(cfg: DictConfig):
         "mask_detection": torch.zeros(1, 125, 5, 1)
     }
     model, _ = load_model(cfg)
+    print(model)
     a = model(input, "zero")
     print(a[1]["pred_actions_ava"].size())
 

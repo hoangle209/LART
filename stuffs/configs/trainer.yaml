@@ -1,0 +1,36 @@
+action_space: ava
+ava:
+  gt_type: all
+  head_dropout: 0.0
+  map_on: AVA
+  num_action_classes: 80
+  num_valid_action_classes: 60
+  predict_valid: true
+  sampling_factor: 1
+extra_feat:
+  apperance:
+    dim: 2048
+    en_dim: 256
+    mid_dim: 512
+  joints_3D:
+    dim: 135
+    en_dim: 128
+    mid_dim: 256
+  pose_shape:
+    dim: 229
+    en_dim: 128
+    mid_dim: 229
+focal_length: 5000
+frame_length: 125
+frame_rate_range: 1
+full_seq_render: false
+kinetics:
+  num_action_classes: 400
+  sampling_factor: 1
+loss_on_others_action: true
+max_people: 5
+num_smpl_heads: 1
+number_of_processes: 25
+test_batch_id: -1
+test_dataset: ava_val
+train_dataset: ava_train,kinetics_train

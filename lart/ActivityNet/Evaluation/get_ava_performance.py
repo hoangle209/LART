@@ -379,9 +379,7 @@ def run_evaluation(labelmap, groundtruth, detections):
   """
   categories, class_whitelist = read_labelmap(labelmap)
   # logging.info("CATEGORIES (%d):\n%s", len(categories), pprint.pformat(categories, indent=2))
-
-  pascal_evaluator = object_detection_evaluation.PascalDetectionEvaluator(
-      categories)
+  pascal_evaluator = object_detection_evaluation.PascalDetectionEvaluator(categories)
 
   # Reads the ground truth data.
   boxes, labels, _, included_keys = read_csv(groundtruth, class_whitelist, 0)
@@ -397,7 +395,6 @@ def run_evaluation(labelmap, groundtruth, detections):
                 np.zeros(len(boxes[image_key]), dtype=bool)
         })
   print_time("convert groundtruth", start)
-
   # Reads detections data.
   boxes, labels, scores, _ = read_csv(detections, class_whitelist, 50)
   start = time.time()
@@ -415,7 +412,6 @@ def run_evaluation(labelmap, groundtruth, detections):
                 np.array(scores[image_key], dtype=float)
         })
   print_time("convert detections", start)
-
   start = time.time()
   metrics = pascal_evaluator.evaluate()
   print_time("run_evaluator", start)

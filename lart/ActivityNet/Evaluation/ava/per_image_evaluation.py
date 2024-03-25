@@ -87,9 +87,10 @@ class PerImageEvaluation(object):
           is of shape [K, 1], representing K True/False positive label of
           object instances detected with class label c
     """
-    detected_boxes, detected_scores, detected_class_labels, detected_masks = (
-        self._remove_invalid_boxes(detected_boxes, detected_scores,
-                                   detected_class_labels, detected_masks))
+    # fixing
+    # detected_boxes, detected_scores, detected_class_labels, detected_masks = (
+    #     self._remove_invalid_boxes(detected_boxes, detected_scores,
+    #                                detected_class_labels, detected_masks))
     scores, tp_fp_labels = self._compute_tp_fp(
         detected_boxes=detected_boxes,
         detected_scores=detected_scores,
@@ -100,7 +101,6 @@ class PerImageEvaluation(object):
         groundtruth_is_group_of_list=groundtruth_is_group_of_list,
         detected_masks=detected_masks,
         groundtruth_masks=groundtruth_masks)
-
     return scores, tp_fp_labels
 
   def _compute_tp_fp(self, detected_boxes, detected_scores,

@@ -9,9 +9,10 @@ import torch
 from lightning import Callback, LightningDataModule, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
-
+import sys
+sys.path.insert(1, '.')
 from lart import utils
-
+from lart.datamodules.phalp_datamodule import PHALPDataModule
 log = utils.get_pylogger(__name__)
 
 root = pyrootutils.setup_root(
@@ -71,8 +72,10 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
         L.seed_everything(cfg.seed, workers=True)
 
     log.info(f"Instantiating datamodule <{cfg.datamodule._target_}>")
-    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
 
+    datamodule: LightningDataModule = hydra.utils.instantiate(cfg.datamodule)
+    # datamodule: LightningDataModule = PHALPDataModule(cfg)
+    
     log.info(f"Instantiating model <{cfg.model._target_}>")
     model: LightningModule = hydra.utils.instantiate(cfg.model)
 
@@ -130,7 +133,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
             checkpoint_path = None
         else:
             log.info("Loading weights from ckpt " + checkpoint_path)
-    
+    datamodule.setup()
     if cfg.get("train"):
         log.info("Starting training!")
         trainer.fit(model=model, datamodule=datamodule, ckpt_path=checkpoint_path)
@@ -154,7 +157,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
     return metric_dict, object_dict
 
 
-@hydra.main(version_base="1.2", config_path="../configs", config_name="train.yaml")
+@hydra.main(version_base="1.2", config_path="../configs", config_name="lart_lite.yaml")
 def main(cfg: DictConfig) -> Optional[float]:
 
     # create data folder if it does not exist

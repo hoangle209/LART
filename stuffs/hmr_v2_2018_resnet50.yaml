@@ -1,0 +1,25 @@
+MODEL:
+  BACKBONE:
+    MASK_TYPE: feat
+    NUM_LAYERS: 50
+    TYPE: resnet
+  IMAGE_SIZE: 256
+  SMPL_HEAD:
+    IN_CHANNELS: 2048
+    POOL: max
+    SMPL_MEAN_PARAMS: .cache/smpl_mean_params.npz
+    TYPE: basic
+  TRANSFORMER:
+    BOX_FEATS: 6
+    HEADS: 1
+    LAYERS: 1
+  pose_transformer_size: 2048
+SMPL:
+  GENDER: neutral
+  JOINT_REGRESSOR_EXTRA: .cache/SMPL_to_J19.pkl
+  MODEL_PATH: .cache/models/smpl/
+  MODEL_TYPE: smpl
+  NUM_BODY_JOINTS: 23
+  TEXTURE: .cache/texture.npz
+hmr:
+  hmar_path: weights/hmar_v2_resnet50.pth

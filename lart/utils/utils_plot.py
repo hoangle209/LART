@@ -36,8 +36,8 @@ def read_labelmap(labelmap_file):
 
 def read_ava_pkl(pkl_file, refence_file=None, best=False, verbose=True, subtask="all", cache_dir=None):
     CACHE_DIR = cache_dir
-    labelmap = read_labelmap(open(os.path.join(CACHE_DIR, 'lart/ava_action_list_v2.2.pbtxt'), 'r'))
-    class_sum = joblib.load(os.path.join(CACHE_DIR, 'lart/class_sum.pkl'))
+    labelmap = read_labelmap(open(os.path.join(CACHE_DIR, 'ava_action_list_v2.2.pbtxt'), 'r'))
+    class_sum = joblib.load(os.path.join(CACHE_DIR, 'class_sum.pkl'))
     def get_actions(pkl_file):
             
         data          = joblib.load(pkl_file)
@@ -102,6 +102,7 @@ def read_ava_pkl(pkl_file, refence_file=None, best=False, verbose=True, subtask=
         
     if(best):
         if(verbose): print("reading best file from ", pkl_file)
+        print(pkl_file)
         files = os.listdir(pkl_file)
         score = []
         results = []

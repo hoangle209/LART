@@ -1,0 +1,60 @@
+item {
+  name: "dance"
+  id: 4
+}
+item {
+  name: "fall down"
+  id: 5
+}
+item {
+  name: "jump/leap"
+  id: 7
+}
+item {
+  name: "lie/sleep"
+  id: 8
+}
+item {
+  name: "run/jog"
+  id: 10
+}
+item {
+  name: "sit"
+  id: 11
+}
+item {
+  name: "stand"
+  id: 12
+}
+item {
+  name: "walk"
+  id: 14
+}
+item {
+  name: "climb (e.g., a mountain)"
+  id: 20
+}
+item {
+  name: "close (e.g., a door, a box)"
+  id: 22
+}
+item {
+  name: "cut"
+  id: 24
+}
+item {
+  name: "hit (an object)"
+  id: 34
+}
+item {
+  name: "shoot"
+  id: 52
+}
+item {
+  name: "fight/hit (a person)"
+  id: 64
+}
+item {
+  name: "watch (a person)"
+  id: 80
+}

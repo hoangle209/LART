@@ -4,14 +4,24 @@ import joblib
 import numpy as np
 import torch
 import torchvision.transforms as transforms
-from phalp.configs.base import CACHE_DIR
 from PIL import Image
 from torch.utils.data import Dataset
 
 from lart.utils import get_pylogger
-from lart.utils.utils import task_divider
+# from lart.utils.utils import task_divider
 
 log = get_pylogger(__name__)
+CACHE_DIR = 'stuffs'
+
+def task_divider(data, batch_id, num_task):
+    batch_length = len(data)//num_task
+    start_       = batch_id*(batch_length+1)
+    end_         = (batch_id+1)*(batch_length+1)
+    if(start_>len(data)): exit()
+    if(end_  >len(data)): end_ = len(data)
+    data    = data[start_:end_] if batch_id>=0 else data
+    return data
+
 
 def to_torch(ndarray):
     if type(ndarray).__module__ == 'numpy':
@@ -36,10 +46,9 @@ class PHALP_action_dataset(Dataset):
         self.frame_length     = self.opt.frame_length
         self.max_tokens       = self.opt.max_people
         self.train            = train
-        self.mean_, self.std_ = np.load(f"{CACHE_DIR}/phalp/3D/mean_std.npy")
-        self.mean_pose_shape  = np.concatenate((self.mean_, np.zeros((1, 229-self.mean_.shape[1]))), axis=1)
-        self.std_pose_shape   = np.concatenate((self.std_, np.ones((1, 229-self.std_.shape[1]))), axis=1)
-        
+        self.mean_, self.std_ = np.load(f"{CACHE_DIR}/mean_std.npy")
+        # self.mean_pose_shape  = np.concatenate((self.mean_, np.zeros((1, 229-self.mean_.shape[1]))), axis=1)
+        # self.std_pose_shape   = np.concatenate((self.std_, np.ones((1, 229-self.std_.shape[1]))), axis=1)
         # temp arguments
         self.opt.img_size     = 256
         self.pixel_mean_      = np.array([0.485 * 255, 0.456 * 255, 0.406 * 255]).reshape(3,1,1)
@@ -51,18 +60,16 @@ class PHALP_action_dataset(Dataset):
             "ava_train"       : ["ava", "data/ava_train/",      self.opt.ava.sampling_factor],
             "ava_val"         : ["ava", "data/ava_val/",        1], 
         }
-        
         if(self.train):
             
             self.list_of_datasets = opt.train_dataset.split(",")
             for dataset in self.list_of_datasets:
                 log.info(self.dataset_roots[dataset][0])
                 self.get_dataset(root_dir=self.dataset_roots[dataset][1], 
-                                filter_seq=self.dataset_roots[dataset][0],
+                                filter_seq='pkl',
                                 num_sample=self.dataset_roots[dataset][2], 
                                 min_track_length=1, 
                                 total_num_tracks=None)   
-                
             self.transform = transforms.Compose([
                 transforms.RandomResizedCrop(224, scale=(0.2, 1.0), interpolation=3),  # 3 is bicubic
                 transforms.RandomHorizontalFlip(),
@@ -88,8 +95,9 @@ class PHALP_action_dataset(Dataset):
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
             
-        self.ava_valid_classes = np.load(f"{CACHE_DIR}/lart/ava_valid_classes.npy")
-        self.kinetics_annotations = joblib.load(f"{CACHE_DIR}/lart/kinetics_annot_train.pkl")
+        # self.ava_valid_classes = np.load(f"{CACHE_DIR}/ava_valid_classes.npy")
+        self.ava_valid_classes = np.array([4, 5, 7, 8, 10, 11, 12, 14, 20, 24, 34, 52, 64, 80])
+        # self.kinetics_annotations = joblib.load(f"{CACHE_DIR}/lart/kinetics_annot_train.pkl")
         log.info("Number of tracks: {}".format(len(self.data)))
             
         self.pose_key = "pose_shape"
@@ -103,7 +111,6 @@ class PHALP_action_dataset(Dataset):
         count    = 0
         count_f  = 0
         path_npy = "data/_TMP/"+"fast_".join(root_dir.split("/"))+".npy"
-        
         # to store all the files in a list
         if(os.path.exists(path_npy)):
             list_of_files = np.load(path_npy)
@@ -120,8 +127,8 @@ class PHALP_action_dataset(Dataset):
         for video_name in list_of_v2t.keys():
             all_tracks = list_of_v2t[video_name]
             for track_i in all_tracks:
+                # fixing in here to get time suitable
                 list_of_t2v[track_i] = [os.path.join(root_dir, i) for i in all_tracks if i!=track_i]
-            
         for i_, video_ in enumerate(list_of_files):
             if(video_.endswith(".pkl") and filter_seq in video_):
                 if(int(video_.split("_")[-1][:-4])>min_track_length):
@@ -137,10 +144,10 @@ class PHALP_action_dataset(Dataset):
         log.info("Total number of frames: {}".format(count_f))
     
     def get_start_end_frame(self, list_of_frames, f_):
-
         if(self.train):
-            start_frame  = np.random.choice(len(list_of_frames)-(self.frame_length+f_), 1)[0] if(len(list_of_frames)>self.frame_length+f_) else 0
-            end_frame    = start_frame + self.frame_length if(len(list_of_frames)>self.frame_length+f_) else  len(list_of_frames)-f_
+            # start_frame  = np.random.choice(len(list_of_frames)-(self.frame_length+f_), 1)[0] if(len(list_of_frames)>self.frame_length+f_) else 0
+            start_frame = 0
+            end_frame    = start_frame + self.frame_length if(len(list_of_frames)>self.frame_length+f_) else  len(list_of_frames)-f_ +1
             key_frame    = (start_frame+end_frame)//2
         else:
             start_frame  = 0
@@ -155,8 +162,7 @@ class PHALP_action_dataset(Dataset):
         except:
             np.save("data/bad_files/" + self.data[idx].split("/")[-1].split(".")[0] + ".npy", [self.data[idx]])
             detection_data   = joblib.load(self.data[0])
-            
-        list_of_frames   = list(range(len(detection_data["frame_name"])))
+        list_of_frames   = list(range(len(detection_data["fid"][0])))
         if(self.opt.frame_rate_range>1 and self.train):
             frame_rate     = np.random.randint(1, self.opt.frame_rate_range)
             list_of_frames = list_of_frames[::frame_rate]
@@ -170,9 +176,8 @@ class PHALP_action_dataset(Dataset):
         return detection_data
 
     def initiate_dict(self, frame_length, f_):
-        
         input_data = { 
-            'pose_shape'            : np.zeros((frame_length, self.max_tokens, 229))*0.0,
+            # 'pose_shape'            : np.zeros((frame_length, self.max_tokens, 28))*0.0,
             'relative_pose'         : np.zeros((frame_length, self.max_tokens, 16))*0.0,
             'has_detection'         : np.zeros((frame_length, self.max_tokens, 1))*0.0,
             'mask_detection'        : np.zeros((frame_length, self.max_tokens, 1))*0.0,
@@ -180,8 +185,8 @@ class PHALP_action_dataset(Dataset):
         }
 
         output_data = {
-            'pose_shape'            : np.zeros((frame_length, self.max_tokens, f_, 229))*0.0,
-            'action_label_ava'      : np.zeros((frame_length, self.max_tokens, f_, 80))*0.0,
+            # 'pose_shape'            : np.zeros((frame_length, self.max_tokens, f_, 28))*0.0,
+            'action_label_ava'      : np.zeros((frame_length, self.max_tokens, f_, 14))*0.0,
             'action_label_kinetics' : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
             'has_detection'         : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
             'has_gt'                : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
@@ -194,7 +199,6 @@ class PHALP_action_dataset(Dataset):
             'frame_size'            : [],
             'frame_conf'            : [],
         }
-        
         if("apperance" in self.opt.extra_feat.enable):
             input_data['apperance_emb'] = np.zeros((frame_length, self.max_tokens, self.opt.extra_feat.apperance.dim))*0.0
             
@@ -207,14 +211,11 @@ class PHALP_action_dataset(Dataset):
         return input_data, output_data, meta_data
     
     def __getitem__(self, idx):
-
         f_ = self.opt.num_smpl_heads
         detection_data, list_of_frames, video_name = self.read_from_phalp_fast(idx)
         start_frame, end_frame, _   = self.get_start_end_frame(list_of_frames, f_)
-        
         if(self.train): frame_length_ = self.opt.frame_length
         else:           frame_length_ = max(end_frame - start_frame, self.opt.frame_length)
-       
         input_data, output_data, meta_data = self.initiate_dict(frame_length_, f_)
         
         # for n>1 setting, read all other tracks.
@@ -222,6 +223,7 @@ class PHALP_action_dataset(Dataset):
         if(self.max_tokens>1):
             tracks_ = self.track2video[idx]
             tracks_tmp = tracks_.copy()
+            # fixing here to find suitable time (3 same / 2 different)
             np.random.shuffle(tracks_tmp)
             for i in range(min(self.max_tokens-1, len(tracks_tmp))):
                 other_tracks.append(self.read_from_phalp_other(tracks_tmp[i]))
@@ -230,48 +232,46 @@ class PHALP_action_dataset(Dataset):
         if(end_frame>frame_length_):
             end_frame = end_frame - start_frame
             start_frame = 0
-    
-    
-        input_data['pose_shape'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]            = (detection_data[self.pose_key][start_frame:end_frame].copy() - self.mean_pose_shape[None, :, :])/(self.std_pose_shape[None, :, :] + 1e-10)
-        input_data['has_detection'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]         = detection_data["has_detection"][start_frame:end_frame]
-        input_data['fid'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]                   = detection_data["fid"][start_frame:end_frame]
+            # Todo => caculate mean, std
+        # input_data['pose_shape'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]            = (detection_data[self.pose_key][0][start_frame:end_frame].copy())
+        input_data['has_detection'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]         = detection_data["has_detection"][0][start_frame:end_frame]
+        input_data['fid'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]                   = detection_data["fid"][0][start_frame:end_frame]
         
-        output_data['pose_shape'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :]        = detection_data[self.pose_key][start_frame:end_frame]
-        output_data['has_detection'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :]     = detection_data["has_detection"][start_frame:end_frame]
-        output_data['has_gt'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :]            = detection_data["has_gt"][start_frame:end_frame]
+        # output_data['pose_shape'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :]        = detection_data[self.pose_key][0][start_frame:end_frame]
+        output_data['has_detection'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :]     = detection_data["has_detection"][0][start_frame:end_frame]
+        output_data['has_gt'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :]            = detection_data["has_gt"][0][start_frame:end_frame]
         
         # add kinetics labels
         if("kinetics" in self.opt.action_space and not("ava" in video_name)):
             class_label = self.kinetics_annotations[video_name.split("kinetics-train_")[1][:11]]
             output_data['has_gt_kinetics'][:, :, 0, :] = 1.0
             output_data['action_label_kinetics'][:, :, 0, :] = class_label[1]
-        
-        appe_idx = detection_data['apperance_index'][start_frame:end_frame][:,0,0]
-        appe_feat = detection_data['apperance_dict']
-        ava_pseudo_labels = detection_data['action_label_psudo']
-        ava_gt_labels = detection_data['action_label_gt'][start_frame:end_frame]
-
-        ava_pseudo_labels_ = np.zeros((end_frame-start_frame, 1, 80))
-        for i in range(ava_pseudo_labels_.shape[0]):
+        appe_idx = detection_data['appearance_index'][0][start_frame:end_frame][:,0,0]
+        appe_feat = detection_data['appearance_dict'][0]
+        ava_pseudo_labels = detection_data['action_label_psudo'][0]
+        ava_gt_labels = detection_data['action_label_gt'][0][start_frame:end_frame]
+        ava_pseudo_labels_ = np.zeros((end_frame-start_frame, 1, 81))
+        # 104?
+        # fixing ava_pseudo_labels_ => appe_idx
+        for i in range(len(appe_idx)):
+            # Todo: half start and half end
             if(appe_idx[i]!=-1):
-                ava_pseudo_labels_[i, 0, :] = ava_pseudo_labels[appe_idx[i]][0]
-        
+                ava_pseudo_labels_[i, 0, :] = np.array(ava_pseudo_labels[int(appe_idx[i])][0])
         ava_pseudo_vectors_ = np.zeros((end_frame-start_frame, 1, self.opt.extra_feat.apperance.dim))
-        for i in range(ava_pseudo_vectors_.shape[0]):
+        for i in range(len(appe_idx)):
             if(appe_idx[i]!=-1):
-                ava_pseudo_vectors_[i, 0, :] = appe_feat[appe_idx[i]][0]
-
-        has_gt_array = detection_data['has_gt'][start_frame:end_frame, 0, 0].copy()
+                ava_pseudo_vectors_[i, 0, :] = np.array(appe_feat[int(appe_idx[i])][0])
+        has_gt_array = detection_data['has_gt'][0][start_frame:end_frame, 0, 0].copy()
         ava_pseudo_labels_[has_gt_array==2] = ava_gt_labels[has_gt_array==2]
 
         TMP_ = ava_pseudo_labels_.copy()
-
         if(self.opt.ava.predict_valid):
             action_label_ava_ = np.zeros((end_frame-start_frame, 1, self.opt.ava.num_action_classes))
-            action_label_ava_[:, :, :self.opt.ava.num_valid_action_classes] = TMP_[:, :, self.ava_valid_classes-1]
+            action_label_ava_[:, :, :self.opt.ava.num_valid_action_classes] = TMP_[:, :, self.ava_valid_classes]
             output_data['action_label_ava'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :] = action_label_ava_.copy()
         else:
             action_label_ava_ = np.zeros((end_frame-start_frame, 1, self.opt.ava.num_action_classes))
+            # fixing?
             action_label_ava_[:, :, :] = TMP_[:, :, :]
             output_data['action_label_ava'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :]  = action_label_ava_.copy()
         
@@ -285,14 +285,14 @@ class PHALP_action_dataset(Dataset):
             joints_ = joints_ + camera_
             input_data['joints_3D'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]              = joints_.reshape(end_frame-start_frame, 1, 135)
         
-            
+        if('joints_2D' in input_data.keys()):
+            input_data['joints_2D'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]    =   detection_data[self.pose_key][0][start_frame:end_frame]
         if(self.max_tokens>1):
             # for n>1 setting, read all other tracks.
-            base_idx = detection_data['fid'][start_frame:end_frame]
+            base_idx = detection_data['fid'][0][start_frame:end_frame]
             for ot in range(len(other_tracks)):
                 other_detection_data = other_tracks[ot]
-                other_base_idx = other_detection_data['fid']
-
+                other_base_idx = other_detection_data['fid'][0]
                 if(other_base_idx[0]>base_idx[-1]): continue
                 elif(other_base_idx[-1]<base_idx[0]): continue
                 elif(other_base_idx[0]>=base_idx[0] and other_base_idx[-1, 0, 0]<=base_idx[-1, 0, 0]):
@@ -314,32 +314,32 @@ class PHALP_action_dataset(Dataset):
                 other_end_frame = int(other_end_frame)
                 delta = int(delta)
                 
-                input_data['pose_shape'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]            = (other_detection_data[self.pose_key][other_start_frame:other_end_frame].copy() - self.mean_pose_shape[None, :, :])/(self.std_pose_shape[None, :, :] + 1e-10)
-                input_data['has_detection'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]         = other_detection_data["has_detection"][other_start_frame:other_end_frame]
-                input_data['fid'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]                   = other_detection_data["fid"][other_start_frame:other_end_frame]
+                # input_data['pose_shape'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]            = (other_detection_data[self.pose_key][other_start_frame:other_end_frame].copy() - self.mean_pose_shape[None, :, :])/(self.std_pose_shape[None, :, :] + 1e-10)
+                input_data['has_detection'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]         = other_detection_data["has_detection"][0][other_start_frame:other_end_frame]
+                input_data['fid'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]                   = other_detection_data["fid"][0][other_start_frame:other_end_frame]
                 
-                output_data['pose_shape'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :]        = other_detection_data[self.pose_key][other_start_frame:other_end_frame]
-                output_data['has_detection'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :]     = other_detection_data["has_detection"][other_start_frame:other_end_frame]
+                # output_data['pose_shape'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :]        = other_detection_data[self.pose_key][other_start_frame:other_end_frame]
+                output_data['has_detection'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :]     = other_detection_data["has_detection"][0][other_start_frame:other_end_frame]
                 if(self.opt.loss_on_others_action):
-                    output_data['has_gt'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :]            = other_detection_data["has_gt"][other_start_frame:other_end_frame]
+                    output_data['has_gt'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :]            = other_detection_data["has_gt"][0][other_start_frame:other_end_frame]
                 
 
-                other_appe_idx = other_detection_data['apperance_index'][other_start_frame:other_end_frame][:,0,0]
-                other_appe_feat = other_detection_data['apperance_dict']
-                other_ava_pseudo_labels = other_detection_data['action_label_psudo']
-                other_ava_gt_labels = other_detection_data['action_label_gt'][other_start_frame:other_end_frame]
-
-                other_ava_pseudo_labels_ = np.zeros((other_end_frame-other_start_frame, 1, 80))
-                for i in range(other_ava_pseudo_labels_.shape[0]):
-                    if(other_appe_idx[i]!=-1):
-                        other_ava_pseudo_labels_[i, 0, :] = other_ava_pseudo_labels[other_appe_idx[i]][0]
+                other_appe_idx = other_detection_data['appearance_index'][0][other_start_frame:other_end_frame][:,0,0]
+                other_appe_feat = other_detection_data['appearance_dict'][0]
+                other_ava_pseudo_labels = other_detection_data['action_label_psudo'][0]
+                other_ava_gt_labels = other_detection_data['action_label_gt'][0][other_start_frame:other_end_frame]
+                other_ava_pseudo_labels_ = np.zeros((other_end_frame-other_start_frame, 1, 81))
+                # cut 56 last frame + 6 frame for not enough 8 frame
+                for i in range(other_ava_pseudo_labels_.shape[0]-61):
+                    # if(other_appe_idx[i]!=-1):
+                    other_ava_pseudo_labels_[i, 0, :] = other_ava_pseudo_labels[int(other_appe_idx[i])][0]
                 
                 other_ava_pseudo_vectors_ = np.zeros((other_end_frame-other_start_frame, 1, self.opt.extra_feat.apperance.dim))
-                for i in range(other_ava_pseudo_vectors_.shape[0]):
-                    if(other_appe_idx[i]!=-1):
+                for i in range(other_ava_pseudo_vectors_.shape[0]-61):
+                    # if(other_appe_idx[i]!=-1):
                         other_ava_pseudo_vectors_[i, 0, :] = other_appe_feat[other_appe_idx[i]][0]
 
-                other_has_gt_array = other_detection_data['has_gt'][other_start_frame:other_end_frame, 0, 0].copy()
+                other_has_gt_array = other_detection_data['has_gt'][0][other_start_frame:other_end_frame, 0, 0].copy()
                 other_ava_pseudo_labels_[other_has_gt_array==2] = other_ava_gt_labels[other_has_gt_array==2]
 
 
@@ -368,19 +368,17 @@ class PHALP_action_dataset(Dataset):
         
         if(not(self.train)):
             # add meta data for rendering
-            meta_data['frame_name'] = detection_data["frame_name"][start_frame:end_frame].copy()
-            meta_data['frame_size'] = detection_data["frame_size"][start_frame:end_frame].copy()
-            meta_data['frame_bbox'] = detection_data["frame_bbox"][start_frame:end_frame].copy()
-            meta_data['frame_conf'] = detection_data["frame_conf"][start_frame:end_frame].copy()
-            
+            meta_data['frame_name'] = detection_data["frame_name"][0][start_frame:end_frame].copy()
+            meta_data['frame_size'] = detection_data["frame_size"][0][start_frame:end_frame].copy()
+            meta_data['frame_bbox'] = detection_data["frame_bbox"][0][start_frame:end_frame].copy()
+            meta_data['frame_conf'] = detection_data["frame_conf"][0][start_frame:end_frame].copy()
+            print(len(meta_data['frame_bbox']))
+            print('+++++++++++++++++++++++++++')
             if(end_frame-start_frame<frame_length_):
                 for i in range((frame_length_)-(end_frame-start_frame)):
                     meta_data['frame_name'].append("-1")
                     meta_data['frame_size'].append(np.array([0, 0]))
                     meta_data['frame_bbox'].append(np.array([0.0, 0.0, 0.0, 0.0]))
-                    meta_data['frame_conf'].append(0)
-                    
+                    meta_data['frame_conf'].append(0)        
         del detection_data
-        
         return input_data, output_data, meta_data, video_name
-

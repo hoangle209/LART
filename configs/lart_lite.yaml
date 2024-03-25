@@ -99,20 +99,20 @@ model:
 configs:
     cache_dir: "${paths.root_dir}/stuffs" # storing stuffs, using to load ava things
     data_dir: ${paths.data_dir}
-    storage_folder: "${paths.log_dir}/${task_name}/${hydra:sweep.subdir}"
+    storage_folder: "${paths.log_dir}${task_name}/${hydra:sweep.subdir}"
     train_dataset: ava_train,kinetics_train
     test_dataset: ava_val
     map_on: "AVA" # or "AVA-AK"
-    train_batch_size: 8
-    train_num_workers: 8
-    test_batch_size: 8
-    test_num_workers: 8
+    train_batch_size: 1
+    train_num_workers: 1
+    test_batch_size: 1
+    test_num_workers: 1
     test_class: ""
     test_batch_id: -1
     number_of_processes: 25
     pin_memory: True
     full_seq_render: False
-    frame_length: 125
+    frame_length: 165
     max_people: 5
     load_other_tracks: False
     img_size: 256
@@ -185,7 +185,7 @@ configs:
             mid_dim: 256
             en_dim: 128
         apperance:
-            dim: 2048
+            dim: 768
             mid_dim: 512
             en_dim: 256
 

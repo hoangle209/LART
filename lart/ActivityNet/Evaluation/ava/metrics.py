@@ -38,7 +38,7 @@ def compute_precision_recall(scores, labels, num_gt):
 
   """
   if not isinstance(
-      labels, np.ndarray) or labels.dtype != np.bool or len(labels.shape) != 1:
+      labels, np.ndarray) or labels.dtype != np.bool_ or len(labels.shape) != 1:
     raise ValueError("labels must be single dimension bool numpy array")
 
   if not isinstance(
@@ -50,10 +50,8 @@ def compute_precision_recall(scores, labels, num_gt):
 
   if len(scores) != len(labels):
     raise ValueError("scores and labels must be of the same size.")
-
   if num_gt == 0:
     return None, None
-
   sorted_indices = np.argsort(scores)
   sorted_indices = sorted_indices[::-1]
   labels = labels.astype(int)
@@ -89,11 +87,11 @@ def compute_average_precision(precision, recall):
     if recall is not None:
       raise ValueError("If precision is None, recall must also be None")
     return np.NAN
-
+  print(precision.dtype)
   if not isinstance(precision, np.ndarray) or not isinstance(recall,
                                                              np.ndarray):
     raise ValueError("precision and recall must be numpy array")
-  if precision.dtype != np.float or recall.dtype != np.float:
+  if precision.dtype != np.float64 or recall.dtype != np.float64:
     raise ValueError("input must be float numpy array.")
   if len(precision) != len(recall):
     raise ValueError("precision and recall must be of the same size.")

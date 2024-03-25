@@ -86,8 +86,8 @@ class LART_LitModule(LightningModule):
         except Exception as e:
             log.warning(e)
             
-        # os.makedirs(self.cfg.storage_folder + "/slowfast/", exist_ok=True) 
-        # os.makedirs(self.cfg.storage_folder + "/results/", exist_ok=True)
+        os.makedirs(self.cfg.storage_folder + "/slowfast/", exist_ok=True) 
+        os.makedirs(self.cfg.storage_folder + "/results/", exist_ok=True)
         # os.makedirs(self.cfg.storage_folder + "/videos/", exist_ok=True)
         # log.info("Storage folder : " + self.cfg.storage_folder)
                 
@@ -140,14 +140,12 @@ class LART_LitModule(LightningModule):
         loss = sum([v for k,v in loss_dict.items()])
 
         self.train_loss(loss.item())
-        
         for key in loss_dict.keys():
             self.log("train/loss/" + key, loss_dict[key].item(), on_step=False, on_epoch=True, prog_bar=True)
         
         self.log_iter_stats(batch_idx)
             
         del loss_dict, output, smpl_output, batch
-        
         return {"loss": loss}
 
     def on_train_epoch_end(self):
@@ -159,7 +157,6 @@ class LART_LitModule(LightningModule):
             self.trainer.datamodule.data_val.__getitem__(0)
 
     def validation_step(self, batch: Any, batch_idx: int):
-
         input_data, output_data, meta_data, video_name = batch
 
         slowfast_paths = [self.cfg.storage_folder + "/slowfast/" + "".join(video_name[i].split(".jpg"))+".pkl" for i in range(len(video_name))]
@@ -180,12 +177,10 @@ class LART_LitModule(LightningModule):
         self.log_iter_stats(batch_idx)
             
         del output, smpl_output, loss_dict, input_data, output_data, meta_data, video_name, batch
-            
         return {"loss": loss}
 
     @rank_zero_only
     def on_validation_epoch_end(self):
-                    
         # logic to read the results and compute the metrics
         if(self.cfg.compute_map and "ava" in self.cfg.action_space):
             self.evaluator_ava.write_ava_csv(self.cfg.storage_folder + "/slowfast/", self.cfg.storage_folder + "/ava_val.csv")
@@ -213,7 +208,6 @@ class LART_LitModule(LightningModule):
         
         if(cur_iter%self.cfg.log_frequency != 0):
             return 0
-        
         mem_usage = gpu_mem_usage()
         try:
             stats = {
@@ -231,11 +225,18 @@ class LART_LitModule(LightningModule):
                 if(cb_.__class__.__name__ == "Timer"):
                     self.timer = cb_
             self.timer_last_iter = self.timer.time_elapsed()
-            stats = {}
+            # fixing and replace stats={}
+            stats = { 
+                "epoch": "{}/{}".format(self.current_epoch, self.trainer.max_epochs),
+                "iter": "{}/{}".format(cur_iter + 1, self.trainer.num_training_batches),
+                "train_loss": "%.4f"%(self.train_loss.compute().item()),
+                "val_loss": "%.4f"%(self.val_loss.compute().item()),
+                "time": "%.4f"%(self.timer.time_elapsed()-self.timer_last_iter),
+                "lr": self.trainer.optimizers[0].param_groups[0]['lr']
+                }
             
         self.train_loss.reset()
         self.val_loss.reset()
-        
         log.info(stats)
     
     def get_param_groups(self):
