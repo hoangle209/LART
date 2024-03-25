@@ -47,7 +47,6 @@ class AVA_evaluator():
         f = open(csv_path, 'w')
         writer = csv.writer(f)
         counter = 0
-
         list_of_name = slowfast_files
         list_of_data = slowfast_pkl_files
         for sl_, slowfast_file in enumerate(list_of_name):
@@ -113,7 +112,6 @@ class AVA_evaluator():
         frame_size_array  = torch.stack(frame_size_array)[None, ...].permute(1, 0, 2)
         frame_conf_array  = torch.stack(frame_conf_array)
         frame_bbox_array  = torch.stack(frame_bbox_array)
-        print(frame_size_array.shape)
         return frame_name_array, frame_size_array, frame_conf_array, frame_bbox_array
 
 

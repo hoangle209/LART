@@ -309,11 +309,9 @@ class PHALP_action_dataset(Dataset):
                     delta = -other_start_frame
                 else:
                     continue
-                
                 other_start_frame = int(other_start_frame)
                 other_end_frame = int(other_end_frame)
                 delta = int(delta)
-                
                 # input_data['pose_shape'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]            = (other_detection_data[self.pose_key][other_start_frame:other_end_frame].copy() - self.mean_pose_shape[None, :, :])/(self.std_pose_shape[None, :, :] + 1e-10)
                 input_data['has_detection'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]         = other_detection_data["has_detection"][0][other_start_frame:other_end_frame]
                 input_data['fid'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]                   = other_detection_data["fid"][0][other_start_frame:other_end_frame]
@@ -365,7 +363,7 @@ class PHALP_action_dataset(Dataset):
                     else:
                         input_data['joints_3D'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]              = joints_.reshape(other_end_frame-other_start_frame, 1, 135)
                 if('joints_2D' in input_data.keys()):
-                    input_data['joints_2D'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]    =   other_detection_data[self.pose_key][0][start_frame:end_frame]
+                    input_data['joints_2D'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]    =   other_detection_data[self.pose_key][0][start_frame:end_frame]
                 del other_detection_data, other_base_idx, action_label_ava_
         
         if(not(self.train)):

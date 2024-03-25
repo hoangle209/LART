@@ -52,7 +52,7 @@ class PHALPDataModule(LightningDataModule):
         
     @property
     def num_classes(self):
-        return 80
+        return 14
 
     def prepare_data(self):
         """Download data if needed.
