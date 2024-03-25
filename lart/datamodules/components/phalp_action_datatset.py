@@ -363,7 +363,7 @@ class PHALP_action_dataset(Dataset):
                     else:
                         input_data['joints_3D'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]              = joints_.reshape(other_end_frame-other_start_frame, 1, 135)
                 if('joints_2D' in input_data.keys()):
-                    input_data['joints_2D'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]    =   other_detection_data[self.pose_key][0][start_frame:end_frame]
+                    input_data['joints_2D'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]    =   other_detection_data[self.pose_key][0][other_start_frame:other_end_frame]
                 del other_detection_data, other_base_idx, action_label_ava_
         
         if(not(self.train)):
