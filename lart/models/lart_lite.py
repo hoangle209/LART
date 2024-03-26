@@ -90,6 +90,8 @@ class LART_LitModule(LightningModule):
         os.makedirs(self.cfg.storage_folder + "/results/", exist_ok=True)
         # os.makedirs(self.cfg.storage_folder + "/videos/", exist_ok=True)
         # log.info("Storage folder : " + self.cfg.storage_folder)
+        
+        self.cls_mapping = torch.tensor([4, 5, 7, 8, 10, 11, 12, 14, 20, 24, 34, 52, 64, 80])
                 
     def forward(self, tokens, mask_type):
 
@@ -167,6 +169,11 @@ class LART_LitModule(LightningModule):
         loss = sum([v for k,v in loss_dict.items()])
         
         if(self.cfg.compute_map and "ava" in self.cfg.action_space): 
+            # remap to ava 81 classes for evalution
+            ava_pred_14 = smpl_output["pred_actions_ava"]
+            cls_temp = torch.zeros(ava_pred_14.size(0), 1, 81)
+            cls_temp[:, :, self.cls_mapping] = ava_pred_14.detach().cpu()
+            smpl_output["pred_actions_ava"] = cls_temp
             self.evaluator_ava.store_results_batch(input_data, output_data, meta_data, smpl_output, video_name, slowfast_paths, output=copy.deepcopy(output[:, self.cfg.max_people:, :]))
 
         # update and log metrics

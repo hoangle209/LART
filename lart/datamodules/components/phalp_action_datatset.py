@@ -84,8 +84,8 @@ class PHALP_action_dataset(Dataset):
                                 min_track_length=1, 
                                 total_num_tracks=None)
             
-            self.data = np.array(self.data)
-            self.track2video = np.array(self.track2video)
+            # self.data = np.array(self.data)
+            # self.track2video = np.array(self.track2video)
             
             self.data = task_divider(self.data, self.opt.test_batch_id, self.opt.number_of_processes)
             self.track2video = task_divider(self.track2video, self.opt.test_batch_id, self.opt.number_of_processes)

@@ -32,7 +32,7 @@ class AVA_evaluator():
         pred_labels = open( self.cfg.storage_folder + "/ava_val.csv", "r")
         map_values = run_evaluation(pbtext, gt_annotations, pred_labels)
         log.info("mAP : " + str(map_values[0]['PascalBoxes_Precision/mAP@0.5IOU']*100.0))
-        print("mAP : " + str(map_values[0]['PascalBoxes_Precision/mAP@0.5IOU']*100.0))
+        # print("mAP : " + str(map_values[0]['PascalBoxes_Precision/mAP@0.5IOU']*100.0))
         joblib.dump(map_values, self.cfg.storage_folder + "/results/" + str(epoch) + ".pkl")
 
         return map_values 

@@ -87,7 +87,6 @@ def compute_average_precision(precision, recall):
     if recall is not None:
       raise ValueError("If precision is None, recall must also be None")
     return np.NAN
-  print(precision.dtype)
   if not isinstance(precision, np.ndarray) or not isinstance(recall,
                                                              np.ndarray):
     raise ValueError("precision and recall must be numpy array")
