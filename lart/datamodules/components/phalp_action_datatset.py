@@ -84,8 +84,8 @@ class PHALP_action_dataset(Dataset):
                                 min_track_length=1, 
                                 total_num_tracks=None)
             
-            # self.data = np.array(self.data)
-            # self.track2video = np.array(self.track2video)
+            self.data = np.array(self.data)
+            self.track2video = np.array(self.track2video)
             
             self.data = task_divider(self.data, self.opt.test_batch_id, self.opt.number_of_processes)
             self.track2video = task_divider(self.track2video, self.opt.test_batch_id, self.opt.number_of_processes)
@@ -153,7 +153,6 @@ class PHALP_action_dataset(Dataset):
             start_frame  = 0
             end_frame    = len(list_of_frames) if(self.opt.full_seq_render) else min(len(list_of_frames), self.frame_length)
             key_frame    = (start_frame+end_frame)//2
-
         return start_frame, end_frame, key_frame
 
     def read_from_phalp_fast(self, idx):
@@ -328,7 +327,7 @@ class PHALP_action_dataset(Dataset):
                 other_ava_gt_labels = other_detection_data['action_label_gt'][0][other_start_frame:other_end_frame]
                 other_ava_pseudo_labels_ = np.zeros((other_end_frame-other_start_frame, 1, 81))
                 # cut 56 last frame + 6 frame for not enough 8 frame
-                for i in range(other_ava_pseudo_labels_.shape[0]-61):
+                for i in range(other_ava_pseudo_labels_.shape[0]):
                     # if(other_appe_idx[i]!=-1):
                     other_ava_pseudo_labels_[i, 0, :] = other_ava_pseudo_labels[int(other_appe_idx[i])][0]
                 
@@ -344,7 +343,7 @@ class PHALP_action_dataset(Dataset):
                 if(self.opt.ava.predict_valid):
                     action_label_ava_ = np.zeros((other_end_frame-other_start_frame, 1, self.opt.ava.num_action_classes))
                     TMP_ = other_ava_pseudo_labels_.copy()
-                    action_label_ava_[:, :, :self.opt.ava.num_valid_action_classes] = TMP_[:, :, self.ava_valid_classes-1]
+                    action_label_ava_[:, :, :self.opt.ava.num_valid_action_classes] = TMP_[:, :, self.ava_valid_classes]
                     output_data['action_label_ava'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :] = action_label_ava_.copy()
                 else:
                     output_data['action_label_ava'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :] = other_detection_data["action_label_ava"][other_start_frame:other_end_frame]

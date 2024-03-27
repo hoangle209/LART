@@ -133,7 +133,7 @@ class LART_LitModule(LightningModule):
         input_data, output_data, _, _ = batch
         output, smpl_output, vq_loss  = self.forward(input_data, mask_type=self.cfg.mask_type)
         loss_dict                     = compute_lite_loss(self.cfg, output, smpl_output, output_data, input_data, train=True)
-        loss_dict['vq_loss']          = vq_loss
+        # loss_dict['vq_loss']          = vq_loss
         
         return loss_dict, output, smpl_output
 
@@ -170,10 +170,11 @@ class LART_LitModule(LightningModule):
         
         if(self.cfg.compute_map and "ava" in self.cfg.action_space): 
             # remap to ava 81 classes for evalution
-            ava_pred_14 = smpl_output["pred_actions_ava"]
-            cls_temp = torch.zeros(ava_pred_14.size(0), 1, 81)
-            cls_temp[:, :, self.cls_mapping] = ava_pred_14.detach().cpu()
-            smpl_output["pred_actions_ava"] = cls_temp
+            # ava_pred_14 = smpl_output["pred_actions_ava"]
+            # cls_temp = torch.zeros(ava_pred_14.size(0), 1, 81)
+            # cls_temp[:, :, self.cls_mapping] = ava_pred_14.detach().cpu()
+            # smpl_output["pred_actions_ava"] = cls_temp
+            # add mapping_ava_class.pkl
             self.evaluator_ava.store_results_batch(input_data, output_data, meta_data, smpl_output, video_name, slowfast_paths, output=copy.deepcopy(output[:, self.cfg.max_people:, :]))
 
         # update and log metrics

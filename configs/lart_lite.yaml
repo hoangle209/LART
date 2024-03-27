@@ -112,7 +112,7 @@ configs:
     number_of_processes: 25
     pin_memory: True
     full_seq_render: False
-    frame_length: 165
+    frame_length: 104
     max_people: 5
     load_other_tracks: False
     img_size: 256

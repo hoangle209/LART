@@ -79,7 +79,7 @@ class AVA_evaluator():
                 loc_  = conf>-1
                 pred_ = pred_[loc_]
                 conf  = conf[loc_]
-
+                print(pred_)
                 for j in range(len(pred_)):
                     if(len(pred_)==self.cfg.ava.num_valid_action_classes+1):
                         pred_class = self.ava_valid_classes[pred_[j]]
