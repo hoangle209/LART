@@ -185,7 +185,7 @@ class PHALP_action_dataset(Dataset):
 
         output_data = {
             # 'pose_shape'            : np.zeros((frame_length, self.max_tokens, f_, 28))*0.0,
-            'action_label_ava'      : np.zeros((frame_length, self.max_tokens, f_, 14))*0.0,
+            'action_label_ava'      : np.zeros((frame_length, self.max_tokens, f_, 81))*0.0,
             'action_label_kinetics' : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
             'has_detection'         : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
             'has_gt'                : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
@@ -332,7 +332,7 @@ class PHALP_action_dataset(Dataset):
                     other_ava_pseudo_labels_[i, 0, :] = other_ava_pseudo_labels[int(other_appe_idx[i])][0]
                 
                 other_ava_pseudo_vectors_ = np.zeros((other_end_frame-other_start_frame, 1, self.opt.extra_feat.apperance.dim))
-                for i in range(other_ava_pseudo_vectors_.shape[0]-61):
+                for i in range(other_ava_pseudo_vectors_.shape[0]):
                     # if(other_appe_idx[i]!=-1):
                         other_ava_pseudo_vectors_[i, 0, :] = other_appe_feat[other_appe_idx[i]][0]
 
