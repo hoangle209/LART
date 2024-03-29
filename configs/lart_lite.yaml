@@ -56,7 +56,7 @@ paths:
     work_dir: ${hydra:runtime.cwd}
 
 extras:
-    print_config: True
+    print_config: False
 
 hydra:
     run:
