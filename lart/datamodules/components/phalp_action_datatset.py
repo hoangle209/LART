@@ -1,17 +1,16 @@
 import os
-
 import joblib
 import numpy as np
 import torch
-import torchvision.transforms as transforms
 from PIL import Image
-from torch.utils.data import Dataset
-
 from lart.utils import get_pylogger
+from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 # from lart.utils.utils import task_divider
 
 log = get_pylogger(__name__)
 CACHE_DIR = 'stuffs'
+threshold = 0.35
 
 def task_divider(data, batch_id, num_task):
     batch_length = len(data)//num_task
@@ -84,8 +83,8 @@ class PHALP_action_dataset(Dataset):
                                 min_track_length=1, 
                                 total_num_tracks=None)
             
-            self.data = np.array(self.data)
-            self.track2video = np.array(self.track2video)
+            # self.data = np.array(self.data)
+            # self.track2video = np.array(self.track2video)
             
             self.data = task_divider(self.data, self.opt.test_batch_id, self.opt.number_of_processes)
             self.track2video = task_divider(self.track2video, self.opt.test_batch_id, self.opt.number_of_processes)
@@ -185,7 +184,8 @@ class PHALP_action_dataset(Dataset):
 
         output_data = {
             # 'pose_shape'            : np.zeros((frame_length, self.max_tokens, f_, 28))*0.0,
-            'action_label_ava'      : np.zeros((frame_length, self.max_tokens, f_, 14))*0.0,
+            'action_label_ava'      : np.zeros((frame_length, self.max_tokens, f_, 81))*0.0,
+            'action_label_ava_hard' : np.zeros((frame_length, self.max_tokens, f_, 81))*0.0,
             'action_label_kinetics' : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
             'has_detection'         : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
             'has_gt'                : np.zeros((frame_length, self.max_tokens, f_, 1))*0.0,
@@ -250,8 +250,7 @@ class PHALP_action_dataset(Dataset):
         ava_pseudo_labels = detection_data['action_label_psudo'][0]
         ava_gt_labels = detection_data['action_label_gt'][0][start_frame:end_frame]
         ava_pseudo_labels_ = np.zeros((end_frame-start_frame, 1, 81))
-        # 104?
-        # fixing ava_pseudo_labels_ => appe_idx
+
         for i in range(len(appe_idx)):
             # Todo: half start and half end
             if(appe_idx[i]!=-1):
@@ -263,29 +262,34 @@ class PHALP_action_dataset(Dataset):
         has_gt_array = detection_data['has_gt'][0][start_frame:end_frame, 0, 0].copy()
         ava_pseudo_labels_[has_gt_array==2] = ava_gt_labels[has_gt_array==2]
 
-        TMP_ = ava_pseudo_labels_.copy()
+        TMP_ = ava_pseudo_labels_.copy() 
         if(self.opt.ava.predict_valid):
             action_label_ava_ = np.zeros((end_frame-start_frame, 1, self.opt.ava.num_action_classes))
             action_label_ava_[:, :, :self.opt.ava.num_valid_action_classes] = TMP_[:, :, self.ava_valid_classes]
             output_data['action_label_ava'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :] = action_label_ava_.copy()
+            output_data["action_label_ava_hard"][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :] = (action_label_ava_.copy() > threshold).astype("int")
         else:
             action_label_ava_ = np.zeros((end_frame-start_frame, 1, self.opt.ava.num_action_classes))
             # fixing?
             action_label_ava_[:, :, :] = TMP_[:, :, :]
             output_data['action_label_ava'][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :]  = action_label_ava_.copy()
+            output_data["action_label_ava_hard"][start_frame:end_frame, self.ego_id:self.ego_id+1, 0, :] = (action_label_ava_.copy() > threshold).astype("int")
         
         # extra features.
         if("apperance_emb" in input_data.keys()):
             input_data['apperance_emb'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]              = ava_pseudo_vectors_
-
-        if("joints_3D" in input_data.keys()):
-            joints_ = detection_data['3d_joints'][:, :, :, :][start_frame:end_frame]
-            camera_ = detection_data['camera'][:, None, :, :][start_frame:end_frame]
-            joints_ = joints_ + camera_
-            input_data['joints_3D'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]              = joints_.reshape(end_frame-start_frame, 1, 135)
         
         if('joints_2D' in input_data.keys()):
+            start = start_frame
+            h, w = detection_data['frame_size'][0][0]
+            for X in detection_data["frame_bbox"][0][start_frame:end_frame]:
+                x1, y1, w_bbox, h_bbox = X
+                if (np.sum(detection_data[self.pose_key][0][start:start+1][::2][0, 0])) > 0 :
+                    detection_data[self.pose_key][0][start:start+1][0, 0][::2] = ((detection_data[self.pose_key][0][start:start+1][0, 0][::2]+x1)/w).astype('float64')
+                    detection_data[self.pose_key][0][start:start+1][0, 0][1::2] = ((detection_data[self.pose_key][0][start:start+1][0, 0][1::2]+y1)/h).astype('float64')
+                start+=1
             input_data['joints_2D'][start_frame:end_frame, self.ego_id:self.ego_id+1, :]    =   detection_data[self.pose_key][0][start_frame:end_frame]
+        
         if(self.max_tokens>1):
             # for n>1 setting, read all other tracks.
             base_idx = detection_data['fid'][0][start_frame:end_frame]
@@ -326,15 +330,17 @@ class PHALP_action_dataset(Dataset):
                 other_ava_pseudo_labels = other_detection_data['action_label_psudo'][0]
                 other_ava_gt_labels = other_detection_data['action_label_gt'][0][other_start_frame:other_end_frame]
                 other_ava_pseudo_labels_ = np.zeros((other_end_frame-other_start_frame, 1, 81))
-                # cut 56 last frame + 6 frame for not enough 8 frame
-                for i in range(other_ava_pseudo_labels_.shape[0]):
+                for i in range(132):
                     # if(other_appe_idx[i]!=-1):
-                    other_ava_pseudo_labels_[i, 0, :] = other_ava_pseudo_labels[int(other_appe_idx[i])][0]
+                    # print(i)
+                    # print(np.array(other_ava_pseudo_labels[int(other_appe_idx[i])]).shape)
+                    # print('-------------------------')
+                    other_ava_pseudo_labels_[i, 0, :] = other_ava_pseudo_labels[int(other_appe_idx[i])][0][0]
                 
                 other_ava_pseudo_vectors_ = np.zeros((other_end_frame-other_start_frame, 1, self.opt.extra_feat.apperance.dim))
-                for i in range(other_ava_pseudo_vectors_.shape[0]-61):
+                for i in range(other_ava_pseudo_vectors_.shape[0]):
                     # if(other_appe_idx[i]!=-1):
-                        other_ava_pseudo_vectors_[i, 0, :] = other_appe_feat[other_appe_idx[i]][0]
+                        other_ava_pseudo_vectors_[i, 0, :] = other_appe_feat[other_appe_idx[i]][0][0]
 
                 other_has_gt_array = other_detection_data['has_gt'][0][other_start_frame:other_end_frame, 0, 0].copy()
                 other_ava_pseudo_labels_[other_has_gt_array==2] = other_ava_gt_labels[other_has_gt_array==2]
@@ -344,25 +350,28 @@ class PHALP_action_dataset(Dataset):
                     action_label_ava_ = np.zeros((other_end_frame-other_start_frame, 1, self.opt.ava.num_action_classes))
                     TMP_ = other_ava_pseudo_labels_.copy()
                     action_label_ava_[:, :, :self.opt.ava.num_valid_action_classes] = TMP_[:, :, self.ava_valid_classes]
-                    output_data['action_label_ava'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :] = action_label_ava_.copy()
+                    output_data['action_label_ava'][delta + other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :] = action_label_ava_.copy()
+                    output_data["action_label_ava_hard"][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :] = (action_label_ava_.copy() > threshold).astype("int")
                 else:
                     output_data['action_label_ava'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :] = other_detection_data["action_label_ava"][other_start_frame:other_end_frame]
+                    output_data["action_label_ava_hard"][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, 0, :] = (other_detection_data["action_label_ava"][other_start_frame:other_end_frame].copy() > threshold).astype("int")
                 
                 # extra features.
                 if("apperance_emb" in input_data.keys()):
+                    
                     input_data['apperance_emb'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]             = other_ava_pseudo_vectors_
                 
-                if("joints_3D" in input_data.keys()):
-                    joints_ = other_detection_data['3d_joints'][:, :, :, :][other_start_frame:other_end_frame]
-                    camera_ = other_detection_data['camera'][:, None, :, :][other_start_frame:other_end_frame]
-                    joints_ = joints_ + camera_
-                    if(not(self.opt.loss_on_others_action)):
-                        input_data['joints_3D'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]              = joints_.reshape(other_end_frame-other_start_frame, 1, 135)
-                        input_data['joints_3D'][:, ot+1:ot+2, :] -= input_data['joints_3D'][:, self.ego_id:self.ego_id+1, :]
-                    else:
-                        input_data['joints_3D'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]              = joints_.reshape(other_end_frame-other_start_frame, 1, 135)
                 if('joints_2D' in input_data.keys()):
+                    h, w = other_detection_data['frame_size'][0][0]
+                    start = other_start_frame
+                    for X in other_detection_data["frame_bbox"][0][other_start_frame:other_end_frame]:
+                        x1, y1, w_bbox, h_bbox = X
+                        if (np.sum(other_detection_data[self.pose_key][0][start:start+1][::2][0, 0])) > 0 :
+                            other_detection_data[self.pose_key][0][start:start+1][0, 0][::2] = ((other_detection_data[self.pose_key][0][start:start+1][0, 0][::2]+x1)/w).astype('float64')
+                            other_detection_data[self.pose_key][0][start:start+1][0, 0][1::2] = ((other_detection_data[self.pose_key][0][start:start+1][0, 0][1::2]+y1)/h).astype('float64')
+                        start+=1
                     input_data['joints_2D'][delta+other_start_frame:delta+other_end_frame, ot+1:ot+2, :]    =   other_detection_data[self.pose_key][0][other_start_frame:other_end_frame]
+                
                 del other_detection_data, other_base_idx, action_label_ava_
         
         if(not(self.train)):

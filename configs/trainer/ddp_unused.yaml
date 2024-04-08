@@ -7,7 +7,7 @@ defaults:
 # https://pytorch-lightning.readthedocs.io/en/latest/accelerators/gpu_intermediate.html#distributed-data-parallel-spawn
 strategy: ddp_find_unused_parameters_true
 accelerator: gpu
-devices: 8
+devices: 1
 num_nodes: 1
 sync_batchnorm: True
-max_epochs: 30
+max_epochs: 100

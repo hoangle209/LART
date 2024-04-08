@@ -75,7 +75,6 @@ def compute_loss(opt, output, smpl_output, output_data, input_data, train=True):
                     loca_loss_annot = torch.logical_and(loca_loss==1, gt_has_annotation[:, :, :, 0]>=1)
                 else:
                     raise ValueError("Unknown ava gt type")
-
                 if("BCE" in opt.loss_type.split("action")[1]):
                     loss_action = 10 * F.binary_cross_entropy_with_logits(pred_action_ava[loca_loss_annot], gt_action_ava[loca_loss_annot])
                     
@@ -127,7 +126,6 @@ def compute_lite_loss(opt, output, smpl_output, output_data, input_data, train=T
         if("action" in opt.loss_type):
             if("ava" in opt.action_space):
                 gt_has_annotation  = output_data['has_gt'][:, :, :, fi, :]
-                
                 if(opt.ava.gt_type=="gt"):
                     loca_loss_annot = torch.logical_and(loca_loss==1, gt_has_annotation[:, :, :, 0]==2)
                 elif(opt.ava.gt_type=="pseduo_gt"):
@@ -136,7 +134,6 @@ def compute_lite_loss(opt, output, smpl_output, output_data, input_data, train=T
                     loca_loss_annot = torch.logical_and(loca_loss==1, gt_has_annotation[:, :, :, 0]>=1)
                 else:
                     raise ValueError("Unknown ava gt type")
-
                 if("BCE" in opt.loss_type.split("action")[1]):
                     loss_action = 10 * F.binary_cross_entropy_with_logits(pred_action_ava[loca_loss_annot], gt_action_ava[loca_loss_annot])
                     

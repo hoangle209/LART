@@ -103,7 +103,7 @@ configs:
     train_dataset: ava_train,kinetics_train
     test_dataset: ava_val
     map_on: "AVA" # or "AVA-AK"
-    train_batch_size: 1
+    train_batch_size: 7
     train_num_workers: 1
     test_batch_size: 1
     test_num_workers: 1
@@ -112,7 +112,7 @@ configs:
     number_of_processes: 25
     pin_memory: True
     full_seq_render: False
-    frame_length: 104
+    frame_length: 132
     max_people: 5
     load_other_tracks: False
     img_size: 256
@@ -162,7 +162,7 @@ configs:
     
     ava:
         sampling_factor: 1
-        num_action_classes: 14
+        num_action_classes: 81
         num_valid_action_classes: 14
         gt_type: "all"
         head_dropout: 0.0
